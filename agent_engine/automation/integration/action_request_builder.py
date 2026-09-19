@@ -12,11 +12,11 @@ ActionRequest understood by the Automation Engine.
 The ActionRequestBuilder is the integration boundary between:
 
     Agent Brain
-        ↓
+        â†“
     InterpretedTask
-        ↓
+        â†“
     ActionRequest
-        ↓
+        â†“
     Automation Engine
 
 Responsibilities:
@@ -134,11 +134,21 @@ class ActionRequestBuilder:
             "search",
             "download",
             "close",
+            "go_back",
+            "go_forward",
+            "refresh",
+            "get_page_title",
+            "get_current_url",
+            "get_text",
+            "extract_text",
+            "new_tab",
+            "switch_tab",
+            "close_tab",
         }:
             return ActionCategory.BROWSER
 
         if normalized_action in {
-            "click",
+            "click_element",
             "type_text",
             "press_key",
         }:
@@ -146,7 +156,12 @@ class ActionRequestBuilder:
 
         if normalized_action in {
             "move_mouse",
-            "click_mouse",
+            "click",
+            "double_click",
+            "right_click",
+            "mouse_down",
+            "mouse_up",
+            "scroll",
         }:
             return ActionCategory.MOUSE
 
