@@ -324,3 +324,162 @@ def test_mouse_action_request_is_built_correctly(
     assert result.metadata == {
         "source": "m5_j",
     }
+# =============================================================================
+# M5-K Application & Window Automation Integration Tests
+# =============================================================================
+
+@pytest.mark.parametrize(
+    "action",
+    [
+        "launch_application",
+        "close_application",
+        "restart_application",
+        "terminate_application",
+        "focus_window",
+        "switch_window",
+        "resize_window",
+        "position_window",
+    ],
+)
+def test_m5_k_actions_resolve_to_desktop_application_contract(
+    builder,
+    action,
+):
+    """
+    M5-K application/window actions should resolve to the
+    APPLICATION category and DESKTOP automation tool.
+    """
+
+    task = InterpretedTask(
+        task_id=100,
+        original_text=action,
+        normalized_text=action,
+        action=action,
+        tool="desktop_agent",
+    )
+
+    result = builder.build(task)
+
+    assert isinstance(result, ActionRequest)
+
+    assert result.action == action
+    assert result.category == ActionCategory.APPLICATION
+    assert result.tool == ToolType.DESKTOP
+
+
+def test_m5_k_launch_application_request(
+    builder,
+):
+    """Launch application parameters should be preserved."""
+
+    task = InterpretedTask(
+        task_id=101,
+        original_text="Launch Notepad",
+        normalized_text="launch notepad",
+        action="launch_application",
+        tool="desktop_agent",
+        parameters={
+            "application": "notepad",
+        },
+        metadata={
+            "source": "m5_k",
+        },
+    )
+
+    result = builder.build(task)
+
+    assert result.task_id == 101
+    assert result.action == "launch_application"
+    assert result.category == ActionCategory.APPLICATION
+    assert result.tool == ToolType.DESKTOP
+
+    assert result.parameters == {
+        "application": "notepad",
+    }
+
+    assert result.metadata == {
+        "source": "m5_k",
+    }
+
+
+def test_m5_k_resize_window_request(
+    builder,
+):
+    """Resize window parameters should be preserved exactly."""
+
+    task = InterpretedTask(
+        task_id=102,
+        original_text="Resize Notepad window",
+        normalized_text="resize notepad window",
+        action="resize_window",
+        tool="desktop_agent",
+        parameters={
+            "application": "notepad",
+            "width": 1200,
+            "height": 800,
+        },
+        metadata={
+            "source": "m5_k",
+        },
+    )
+
+    result = builder.build(
+        task,
+        timeout_seconds=30,
+    )
+
+    assert result.task_id == 102
+    assert result.action == "resize_window"
+    assert result.category == ActionCategory.APPLICATION
+    assert result.tool == ToolType.DESKTOP
+
+    assert result.parameters == {
+        "application": "notepad",
+        "width": 1200,
+        "height": 800,
+    }
+
+    assert result.timeout_seconds == 30
+
+    assert result.metadata == {
+        "source": "m5_k",
+    }
+
+
+def test_m5_k_position_window_request(
+    builder,
+):
+    """Position window parameters should be preserved exactly."""
+
+    task = InterpretedTask(
+        task_id=103,
+        original_text="Move Notepad window",
+        normalized_text="move notepad window",
+        action="position_window",
+        tool="desktop_agent",
+        parameters={
+            "application": "notepad",
+            "x": 100,
+            "y": 50,
+        },
+        metadata={
+            "source": "m5_k",
+        },
+    )
+
+    result = builder.build(task)
+
+    assert result.task_id == 103
+    assert result.action == "position_window"
+    assert result.category == ActionCategory.APPLICATION
+    assert result.tool == ToolType.DESKTOP
+
+    assert result.parameters == {
+        "application": "notepad",
+        "x": 100,
+        "y": 50,
+    }
+
+    assert result.metadata == {
+        "source": "m5_k",
+    }

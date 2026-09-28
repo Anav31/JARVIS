@@ -12,9 +12,10 @@ from agent_engine.automation.models.execution_result import (
 from agent_engine.automation.registry.agent_registry import AgentRegistry
 from agent_engine.contracts.action import ActionRequest
 from agent_engine.contracts.enums import ActionCategory, ToolType
-from agent_engine.automation.agents.mouse.mouse_agent import (
-    MouseAutomationAgent,
-)
+from agent_engine.automation.agents.mouse.mouse_agent import MouseAutomationAgent
+from agent_engine.automation.agents.desktop.desktop_agent import ApplicationWindowAutomationAgent
+from agent_engine.automation.agents.desktop.fake_desktop_backend import FakeDesktopBackend
+from agent_engine.automation.registry.tool_agent_mapper import ToolAgentMapper
 
 
 # =============================================================================
@@ -287,3 +288,44 @@ def test_registered_mouse_agent_can_be_retrieved() -> None:
 
     assert retrieved is agent
     assert isinstance(retrieved, MouseAutomationAgent)
+
+# =============================================================================
+# M5-K Desktop Agent Registration + Mapping Tests
+# =============================================================================
+
+def test_desktop_agent_can_be_registered() -> None:
+    registry = AgentRegistry()
+
+    backend = FakeDesktopBackend()
+    agent = ApplicationWindowAutomationAgent(
+        backend=backend,
+    )
+
+    registry.register(agent)
+
+    assert registry.count() == 1
+    assert registry.contains("desktop_agent")
+
+
+def test_desktop_agent_can_be_resolved_through_tool_agent_mapper() -> None:
+    registry = AgentRegistry()
+
+    backend = FakeDesktopBackend()
+    agent = ApplicationWindowAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(registry)
+
+    mapper.register(
+        ToolType.DESKTOP,
+        agent,
+    )
+
+    resolved = mapper.resolve(
+        ToolType.DESKTOP
+    )
+
+    assert resolved is agent
+    assert resolved.agent_id == "desktop_agent"
+    assert resolved.tool_type == ToolType.DESKTOP

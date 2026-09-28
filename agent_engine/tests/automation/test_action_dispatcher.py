@@ -2,6 +2,8 @@
 Tests for the concrete Automation Engine Action Dispatcher.
 """
 
+from unittest import result
+
 from agent_engine.agent_brain.models.interpreted_task import InterpretedTask
 from agent_engine.automation.dispatcher.action_dispatcher import (
     AutomationActionDispatcher,
@@ -23,7 +25,9 @@ from agent_engine.automation.registry.tool_agent_mapper import ToolAgentMapper
 from agent_engine.contracts.enums import ToolType
 from agent_engine.automation.agents.base import AutomationAgent
 from agent_engine.automation.models.capabilities import AgentCapabilities
-
+from agent_engine.automation.agents.desktop.desktop_agent import ApplicationWindowAutomationAgent
+from agent_engine.automation.agents.desktop.fake_desktop_backend import FakeDesktopBackend
+from agent_engine.automation.agents.base import AgentLifecycleState
 class FakeMouseActions:
 
     def __init__(self):
@@ -649,3 +653,993 @@ def test_dispatcher_integrates_mouse_execution_result():
     mouse_actions.click.assert_called_once_with(
         button="left",
     )
+# =============================================================================
+# M5-K.8 Dispatcher → Desktop Agent Integration Tests
+# =============================================================================
+
+def test_dispatcher_routes_launch_application_to_desktop_agent():
+    registry = ActionRegistry()
+
+    agent_registry = AgentRegistry()
+
+    backend = FakeDesktopBackend()
+
+    desktop_agent = ApplicationWindowAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(
+        agent_registry
+    )
+
+    mapper.register(
+        ToolType.DESKTOP,
+        desktop_agent,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=100,
+        action="launch_application",
+        tool="desktop_agent",
+        parameters={
+            "application": "notepad",
+        },
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 100
+    assert result.status == ExecutionStatus.COMPLETED
+    assert result.success is True
+    assert result.failure_type == FailureType.NONE
+
+    assert backend.calls == [
+        {
+            "operation": "launch_application",
+            "parameters": {
+                "application": "notepad",
+            },
+        }
+    ]
+
+def test_dispatcher_routes_resize_window_to_desktop_agent():
+    registry = ActionRegistry()
+
+    agent_registry = AgentRegistry()
+
+    backend = FakeDesktopBackend()
+
+    desktop_agent = ApplicationWindowAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(
+        agent_registry
+    )
+
+    mapper.register(
+        ToolType.DESKTOP,
+        desktop_agent,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=101,
+        action="resize_window",
+        tool="desktop_agent",
+        parameters={
+            "application": "notepad",
+            "width": 1200,
+            "height": 800,
+        },
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 101
+    assert result.status == ExecutionStatus.COMPLETED
+    assert result.success is True
+    assert result.failure_type == FailureType.NONE
+
+    assert backend.calls == [
+        {
+            "operation": "resize_window",
+            "parameters": {
+                "application": "notepad",
+                "width": 1200,
+                "height": 800,
+            },
+        }
+    ]
+
+
+def test_dispatcher_routes_position_window_to_desktop_agent():
+    registry = ActionRegistry()
+
+    agent_registry = AgentRegistry()
+
+    backend = FakeDesktopBackend()
+
+    desktop_agent = ApplicationWindowAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(
+        agent_registry
+    )
+
+    mapper.register(
+        ToolType.DESKTOP,
+        desktop_agent,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=102,
+        action="position_window",
+        tool="desktop_agent",
+        parameters={
+            "application": "notepad",
+            "x": 100,
+            "y": 50,
+        },
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 102
+    assert result.status == ExecutionStatus.COMPLETED
+    assert result.success is True
+    assert result.failure_type == FailureType.NONE
+
+    assert backend.calls == [
+        {
+            "operation": "position_window",
+            "parameters": {
+                "application": "notepad",
+                "x": 100,
+                "y": 50,
+            },
+        }
+    ]
+
+# =============================================================================
+# M5-K.8C Complete Dispatcher Coverage — Remaining Desktop Actions
+# =============================================================================
+
+
+def test_dispatcher_routes_close_application_to_desktop_agent():
+    registry = ActionRegistry()
+
+    agent_registry = AgentRegistry()
+
+    backend = FakeDesktopBackend()
+
+    desktop_agent = ApplicationWindowAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(
+        agent_registry
+    )
+
+    mapper.register(
+        ToolType.DESKTOP,
+        desktop_agent,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=103,
+        action="close_application",
+        tool="desktop_agent",
+        parameters={
+            "application": "notepad",
+        },
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 103
+    assert result.status == ExecutionStatus.COMPLETED
+    assert result.success is True
+    assert result.failure_type == FailureType.NONE
+
+    assert backend.calls == [
+        {
+            "operation": "close_application",
+            "parameters": {
+                "application": "notepad",
+            },
+        }
+    ]
+
+
+def test_dispatcher_routes_restart_application_to_desktop_agent():
+    registry = ActionRegistry()
+
+    agent_registry = AgentRegistry()
+
+    backend = FakeDesktopBackend()
+
+    desktop_agent = ApplicationWindowAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(
+        agent_registry
+    )
+
+    mapper.register(
+        ToolType.DESKTOP,
+        desktop_agent,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=104,
+        action="restart_application",
+        tool="desktop_agent",
+        parameters={
+            "application": "notepad",
+        },
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 104
+    assert result.status == ExecutionStatus.COMPLETED
+    assert result.success is True
+    assert result.failure_type == FailureType.NONE
+
+    assert backend.calls == [
+        {
+            "operation": "restart_application",
+            "parameters": {
+                "application": "notepad",
+            },
+        }
+    ]
+
+
+def test_dispatcher_routes_terminate_application_to_desktop_agent():
+    registry = ActionRegistry()
+
+    agent_registry = AgentRegistry()
+
+    backend = FakeDesktopBackend()
+
+    desktop_agent = ApplicationWindowAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(
+        agent_registry
+    )
+
+    mapper.register(
+        ToolType.DESKTOP,
+        desktop_agent,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=105,
+        action="terminate_application",
+        tool="desktop_agent",
+        parameters={
+            "application": "notepad",
+        },
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 105
+    assert result.status == ExecutionStatus.COMPLETED
+    assert result.success is True
+    assert result.failure_type == FailureType.NONE
+
+    assert backend.calls == [
+        {
+            "operation": "terminate_application",
+            "parameters": {
+                "application": "notepad",
+            },
+        }
+    ]
+
+
+def test_dispatcher_routes_focus_window_to_desktop_agent():
+    registry = ActionRegistry()
+
+    agent_registry = AgentRegistry()
+
+    backend = FakeDesktopBackend()
+
+    desktop_agent = ApplicationWindowAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(
+        agent_registry
+    )
+
+    mapper.register(
+        ToolType.DESKTOP,
+        desktop_agent,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=106,
+        action="focus_window",
+        tool="desktop_agent",
+        parameters={
+            "application": "notepad",
+        },
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 106
+    assert result.status == ExecutionStatus.COMPLETED
+    assert result.success is True
+    assert result.failure_type == FailureType.NONE
+
+    assert backend.calls == [
+        {
+            "operation": "focus_window",
+            "parameters": {
+                "application": "notepad",
+            },
+        }
+    ]
+
+
+def test_dispatcher_routes_switch_window_to_desktop_agent():
+    registry = ActionRegistry()
+
+    agent_registry = AgentRegistry()
+
+    backend = FakeDesktopBackend()
+
+    desktop_agent = ApplicationWindowAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(
+        agent_registry
+    )
+
+    mapper.register(
+        ToolType.DESKTOP,
+        desktop_agent,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=107,
+        action="switch_window",
+        tool="desktop_agent",
+        parameters={
+            "target": "Notepad",
+        },
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 107
+    assert result.status == ExecutionStatus.COMPLETED
+    assert result.success is True
+    assert result.failure_type == FailureType.NONE
+
+    assert backend.calls == [
+        {
+            "operation": "switch_window",
+            "parameters": {
+                "target": "Notepad",
+            },
+        }
+    ]
+
+# =============================================================================
+# M5-K.9A End-to-End Integration Test
+# =============================================================================
+
+
+def test_application_window_agent_end_to_end_execution_flow():
+    registry = ActionRegistry()
+
+    agent_registry = AgentRegistry()
+
+    backend = FakeDesktopBackend()
+
+    desktop_agent = ApplicationWindowAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(
+        agent_registry
+    )
+
+    mapper.register(
+        ToolType.DESKTOP,
+        desktop_agent,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    tasks = [
+        create_task(
+            task_id=200,
+            action="launch_application",
+            tool="desktop_agent",
+            parameters={
+                "application": "notepad",
+            },
+        ),
+        create_task(
+            task_id=201,
+            action="focus_window",
+            tool="desktop_agent",
+            parameters={
+                "application": "notepad",
+            },
+        ),
+        create_task(
+            task_id=202,
+            action="resize_window",
+            tool="desktop_agent",
+            parameters={
+                "application": "notepad",
+                "width": 1200,
+                "height": 800,
+            },
+        ),
+        create_task(
+            task_id=203,
+            action="position_window",
+            tool="desktop_agent",
+            parameters={
+                "application": "notepad",
+                "x": 100,
+                "y": 50,
+            },
+        ),
+        create_task(
+            task_id=204,
+            action="switch_window",
+            tool="desktop_agent",
+            parameters={
+                "target": "Notepad",
+            },
+        ),
+        create_task(
+            task_id=205,
+            action="close_application",
+            tool="desktop_agent",
+            parameters={
+                "application": "notepad",
+            },
+        ),
+    ]
+
+    results = []
+
+    for task in tasks:
+        result = dispatcher.dispatch(
+            task,
+            attempt=1,
+        )
+        results.append(result)
+
+    assert len(results) == 6
+
+    for result, task in zip(results, tasks):
+        assert result.task_id == task.task_id
+        assert result.status == ExecutionStatus.COMPLETED
+        assert result.success is True
+        assert result.failure_type == FailureType.NONE
+
+    assert backend.calls == [
+        {
+            "operation": "launch_application",
+            "parameters": {
+                "application": "notepad",
+            },
+        },
+        {
+            "operation": "focus_window",
+            "parameters": {
+                "application": "notepad",
+            },
+        },
+        {
+            "operation": "resize_window",
+            "parameters": {
+                "application": "notepad",
+                "width": 1200,
+                "height": 800,
+            },
+        },
+        {
+            "operation": "position_window",
+            "parameters": {
+                "application": "notepad",
+                "x": 100,
+                "y": 50,
+            },
+        },
+        {
+            "operation": "switch_window",
+            "parameters": {
+                "target": "Notepad",
+            },
+        },
+        {
+            "operation": "close_application",
+            "parameters": {
+                "application": "notepad",
+            },
+        },
+    ]
+# =============================================================================
+# M5-K.9B Lifecycle Integration Tests
+# =============================================================================
+
+
+def test_application_window_agent_restart_lifecycle_through_dispatcher():
+    registry = ActionRegistry()
+
+    agent_registry = AgentRegistry()
+
+    backend = FakeDesktopBackend()
+
+    desktop_agent = ApplicationWindowAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(
+        agent_registry
+    )
+
+    mapper.register(
+        ToolType.DESKTOP,
+        desktop_agent,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=210,
+        action="restart_application",
+        tool="desktop_agent",
+        parameters={
+            "application": "notepad",
+        },
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 210
+    assert result.status == ExecutionStatus.COMPLETED
+    assert result.success is True
+    assert result.failure_type == FailureType.NONE
+
+    assert backend.calls == [
+        {
+            "operation": "restart_application",
+            "parameters": {
+                "application": "notepad",
+            },
+        }
+    ]
+
+def test_application_window_agent_terminate_lifecycle_through_dispatcher():
+    registry = ActionRegistry()
+
+    agent_registry = AgentRegistry()
+
+    backend = FakeDesktopBackend()
+
+    desktop_agent = ApplicationWindowAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(
+        agent_registry
+    )
+
+    mapper.register(
+        ToolType.DESKTOP,
+        desktop_agent,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=211,
+        action="terminate_application",
+        tool="desktop_agent",
+        parameters={
+            "application": "notepad",
+        },
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 211
+    assert result.status == ExecutionStatus.COMPLETED
+    assert result.success is True
+    assert result.failure_type == FailureType.NONE
+
+    assert backend.calls == [
+        {
+            "operation": "terminate_application",
+            "parameters": {
+                "application": "notepad",
+            },
+        }
+    ]
+# =============================================================================
+# M5-K.9C Failure / Validation Propagation Tests
+# =============================================================================
+
+
+def test_dispatcher_propagates_missing_application_validation_failure():
+    registry = ActionRegistry()
+
+    agent_registry = AgentRegistry()
+
+    backend = FakeDesktopBackend()
+
+    desktop_agent = ApplicationWindowAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(
+        agent_registry
+    )
+
+    mapper.register(
+        ToolType.DESKTOP,
+        desktop_agent,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=220,
+        action="launch_application",
+        tool="desktop_agent",
+        parameters={},
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 220
+    assert result.success is False
+    assert result.failure_type == FailureType.VALIDATION
+
+    assert backend.calls == []
+def test_dispatcher_propagates_invalid_resize_validation_failure():
+    registry = ActionRegistry()
+
+    agent_registry = AgentRegistry()
+
+    backend = FakeDesktopBackend()
+
+    desktop_agent = ApplicationWindowAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(
+        agent_registry
+    )
+
+    mapper.register(
+        ToolType.DESKTOP,
+        desktop_agent,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=221,
+        action="resize_window",
+        tool="desktop_agent",
+        parameters={
+            "application": "notepad",
+            "width": -1200,
+            "height": 800,
+        },
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 221
+    assert result.success is False
+    assert result.failure_type == FailureType.VALIDATION
+
+    assert backend.calls == []
+def test_dispatcher_propagates_invalid_position_validation_failure():
+    registry = ActionRegistry()
+
+    agent_registry = AgentRegistry()
+
+    backend = FakeDesktopBackend()
+
+    desktop_agent = ApplicationWindowAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(
+        agent_registry
+    )
+
+    mapper.register(
+        ToolType.DESKTOP,
+        desktop_agent,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=222,
+        action="position_window",
+        tool="desktop_agent",
+        parameters={
+            "application": "notepad",
+            "x": "100",
+            "y": 50,
+        },
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 222
+    assert result.success is False
+    assert result.failure_type == FailureType.VALIDATION
+
+    assert backend.calls == []
+def test_dispatcher_propagates_missing_switch_target_validation_failure():
+    registry = ActionRegistry()
+
+    agent_registry = AgentRegistry()
+
+    backend = FakeDesktopBackend()
+
+    desktop_agent = ApplicationWindowAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(
+        agent_registry
+    )
+
+    mapper.register(
+        ToolType.DESKTOP,
+        desktop_agent,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=223,
+        action="switch_window",
+        tool="desktop_agent",
+        parameters={},
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 223
+    assert result.success is False
+    assert result.failure_type == FailureType.VALIDATION
+
+    assert backend.calls == []
+
+def test_application_window_agent_failure_cleanup_lifecycle():
+    registry = ActionRegistry()
+    agent_registry = AgentRegistry()
+    backend = FakeDesktopBackend()
+
+    desktop_agent = ApplicationWindowAutomationAgent(
+        backend=backend
+    )
+
+    mapper = ToolAgentMapper(agent_registry)
+    mapper.register(
+        ToolType.DESKTOP,
+        desktop_agent
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    failing_task = create_task(
+        task_id=230,
+        action="launch_application",
+        tool="desktop_agent",
+        parameters={},
+    )
+
+    failed_result = dispatcher.dispatch(
+        failing_task,
+        attempt=1,
+    )
+
+    assert failed_result.task_id == 230
+    assert failed_result.success is False
+    assert failed_result.failure_type == FailureType.VALIDATION
+
+    assert (
+        desktop_agent.lifecycle_state
+        == AgentLifecycleState.FAILED
+    )
+
+    desktop_agent.cleanup()
+
+    assert (
+        desktop_agent.lifecycle_state
+        == AgentLifecycleState.CLEANED
+    )
+
+    assert backend.calls == []
+
+def test_application_window_agent_normal_cleanup_lifecycle():
+    registry = ActionRegistry()
+    agent_registry = AgentRegistry()
+    backend = FakeDesktopBackend()
+
+    desktop_agent = ApplicationWindowAutomationAgent(
+        backend=backend
+    )
+
+    mapper = ToolAgentMapper(agent_registry)
+    mapper.register(
+        ToolType.DESKTOP,
+        desktop_agent
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=240,
+        action="launch_application",
+        tool="desktop_agent",
+        parameters={
+            "application": "notepad",
+        },
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 240
+    assert result.success is True
+    assert result.failure_type == FailureType.NONE
+
+    assert (
+        desktop_agent.lifecycle_state
+        == AgentLifecycleState.READY
+    )
+
+    desktop_agent.cleanup()
+
+    assert (
+        desktop_agent.lifecycle_state
+        == AgentLifecycleState.CLEANED
+    )
+
+    assert backend.calls == [
+        {
+            "operation": "launch_application",
+            "parameters": {
+                "application": "notepad",
+            },
+        }
+    ]
