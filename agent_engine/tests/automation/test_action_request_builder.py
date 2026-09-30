@@ -260,9 +260,17 @@ def test_invalid_task_type_is_rejected(
         # Screen
         ("take_screenshot", ActionCategory.SCREEN),
 
-        # Filesystem
-        ("delete", ActionCategory.FILESYSTEM),
-
+        # Filesystem — M5-L
+        ("create_file", ActionCategory.FILESYSTEM),
+        ("delete_file", ActionCategory.FILESYSTEM),
+        ("copy_file", ActionCategory.FILESYSTEM),
+        ("move_file", ActionCategory.FILESYSTEM),
+        ("rename_file", ActionCategory.FILESYSTEM),
+        ("get_file_metadata", ActionCategory.FILESYSTEM),
+        ("create_directory", ActionCategory.FILESYSTEM),
+        ("delete_directory", ActionCategory.FILESYSTEM),
+        ("list_directory", ActionCategory.FILESYSTEM),
+        ("path_exists", ActionCategory.FILESYSTEM),
         # Application fallback
         ("open_application", ActionCategory.APPLICATION),
     ],
@@ -483,3 +491,37 @@ def test_m5_k_position_window_request(
     assert result.metadata == {
         "source": "m5_k",
     }
+
+def test_m5_l_filesystem_action_request_is_built_correctly(builder):
+    """M5-L filesystem task should produce a valid ActionRequest."""
+
+    task = InterpretedTask(
+        task_id=101,
+        original_text="create a file",
+        normalized_text="create a file",
+        action="create_file",
+        tool="filesystem_agent",
+        parameters={
+            "path": r"C:\temp\jarvis_test.txt",
+        },
+        metadata={
+            "source": "m5_l",
+        },
+    )
+
+    result = builder.build(
+        task,
+        timeout_seconds=15.0,
+    )
+
+    assert result.task_id == 101
+    assert result.action == "create_file"
+    assert result.tool == ToolType.FILESYSTEM
+    assert result.category == ActionCategory.FILESYSTEM
+    assert result.parameters == {
+        "path": r"C:\temp\jarvis_test.txt",
+    }
+    assert result.metadata == {
+        "source": "m5_l",
+    }
+    assert result.timeout_seconds == 15.0

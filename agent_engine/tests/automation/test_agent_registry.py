@@ -5,6 +5,7 @@ Tests for the Automation Agent Registry.
 import pytest
 
 from agent_engine.automation.agents.base import AutomationAgent
+from agent_engine.automation.agents.filesystem.filesystem_agent import FileSystemAutomationAgent
 from agent_engine.automation.models.capabilities import AgentCapabilities
 from agent_engine.automation.models.execution_result import (
     AutomationExecutionResult,
@@ -16,6 +17,7 @@ from agent_engine.automation.agents.mouse.mouse_agent import MouseAutomationAgen
 from agent_engine.automation.agents.desktop.desktop_agent import ApplicationWindowAutomationAgent
 from agent_engine.automation.agents.desktop.fake_desktop_backend import FakeDesktopBackend
 from agent_engine.automation.registry.tool_agent_mapper import ToolAgentMapper
+from agent_engine.tests.unit.test_file_controller import FakeFileSystemBackend
 
 
 # =============================================================================
@@ -329,3 +331,137 @@ def test_desktop_agent_can_be_resolved_through_tool_agent_mapper() -> None:
     assert resolved is agent
     assert resolved.agent_id == "desktop_agent"
     assert resolved.tool_type == ToolType.DESKTOP
+
+def test_filesystem_agent_can_be_registered_and_retrieved():
+    """
+    AgentRegistry should register and retrieve the
+    FileSystemAutomationAgent by its agent ID.
+    """
+
+    registry = AgentRegistry()
+
+    backend = FakeFileSystemBackend()
+
+    filesystem_agent = FileSystemAutomationAgent(
+        backend=backend,
+    )
+
+    registry.register(filesystem_agent)
+
+    assert registry.contains("filesystem_agent") is True
+    assert registry.count() == 1
+
+    retrieved_agent = registry.get("filesystem_agent")
+
+    assert retrieved_agent is filesystem_agent
+    assert retrieved_agent.agent_id == "filesystem_agent"
+    assert retrieved_agent.tool_type == ToolType.FILESYSTEM
+
+def test_filesystem_mapper_registers_agent_in_agent_registry():
+    """
+    Registering a filesystem agent through ToolAgentMapper should
+    also register that agent in AgentRegistry.
+    """
+
+    registry = AgentRegistry()
+
+    mapper = ToolAgentMapper(registry)
+
+    backend = FakeFileSystemBackend()
+
+    filesystem_agent = FileSystemAutomationAgent(
+        backend=backend,
+    )
+
+    assert registry.contains("filesystem_agent") is False
+
+    mapper.register(
+        ToolType.FILESYSTEM,
+        filesystem_agent,
+    )
+
+    assert registry.contains("filesystem_agent") is True
+    assert registry.count() == 1
+
+    registered_agent = registry.get("filesystem_agent")
+
+    assert registered_agent is filesystem_agent
+
+def test_filesystem_mapper_fails_when_no_mapping_exists():
+    """
+    ToolAgentMapper should reject filesystem resolution when
+    no filesystem mapping has been registered.
+    """
+
+    registry = AgentRegistry()
+    mapper = ToolAgentMapper(registry)
+
+    with pytest.raises(KeyError, match="No AutomationAgent mapped"):
+        mapper.resolve(ToolType.FILESYSTEM)
+
+def test_filesystem_mapping_removal_preserves_registered_agent():
+    """
+    Removing the filesystem ToolType mapping should not remove
+    the filesystem agent from AgentRegistry.
+    """
+
+    registry = AgentRegistry()
+    mapper = ToolAgentMapper(registry)
+
+    backend = FakeFileSystemBackend()
+
+    filesystem_agent = FileSystemAutomationAgent(
+        backend=backend,
+    )
+
+    mapper.register(
+        ToolType.FILESYSTEM,
+        filesystem_agent,
+    )
+
+    assert mapper.contains(ToolType.FILESYSTEM) is True
+    assert registry.contains("filesystem_agent") is True
+
+    mapper.unregister(ToolType.FILESYSTEM)
+
+    assert mapper.contains(ToolType.FILESYSTEM) is False
+    assert registry.contains("filesystem_agent") is True
+
+    assert registry.get("filesystem_agent") is filesystem_agent
+
+def test_filesystem_registry_mapper_resolution_flow():
+    """
+    Verify the complete filesystem registry and mapper resolution flow.
+    """
+
+    registry = AgentRegistry()
+    mapper = ToolAgentMapper(registry)
+
+    backend = FakeFileSystemBackend()
+
+    filesystem_agent = FileSystemAutomationAgent(
+        backend=backend,
+    )
+
+    mapper.register(
+        ToolType.FILESYSTEM,
+        filesystem_agent,
+    )
+
+    agent_id = mapper.get_agent_id(
+        ToolType.FILESYSTEM,
+    )
+
+    assert agent_id == "filesystem_agent"
+
+    resolved_agent = mapper.resolve(
+        ToolType.FILESYSTEM,
+    )
+
+    registered_agent = registry.get(
+        "filesystem_agent",
+    )
+
+    assert resolved_agent is filesystem_agent
+    assert resolved_agent is registered_agent
+    assert resolved_agent.agent_id == agent_id

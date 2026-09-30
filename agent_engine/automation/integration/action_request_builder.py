@@ -172,14 +172,18 @@ class ActionRequestBuilder:
             return ActionCategory.SCREEN
 
         if normalized_action in {
-            "copy",
-            "move",
-            "rename",
-            "delete",
             "create_file",
+            "delete_file",
+            "copy_file",
+            "move_file",
+            "rename_file",
+            "get_file_metadata",
+            "create_directory",
+            "delete_directory",
+            "list_directory",
+            "path_exists",
         }:
             return ActionCategory.FILESYSTEM
-
         return ActionCategory.APPLICATION
 
     # =========================================================================

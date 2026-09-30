@@ -28,6 +28,12 @@ from agent_engine.automation.models.capabilities import AgentCapabilities
 from agent_engine.automation.agents.desktop.desktop_agent import ApplicationWindowAutomationAgent
 from agent_engine.automation.agents.desktop.fake_desktop_backend import FakeDesktopBackend
 from agent_engine.automation.agents.base import AgentLifecycleState
+from agent_engine.automation.agents.filesystem.filesystem_agent import (
+    FileSystemAutomationAgent,
+)
+from agent_engine.automation.agents.filesystem.fake_filesystem_backend import (
+    FakeFileSystemBackend,
+)
 class FakeMouseActions:
 
     def __init__(self):
@@ -1643,3 +1649,582 @@ def test_application_window_agent_normal_cleanup_lifecycle():
             },
         }
     ]
+
+# =============================================================================
+# M5-L.8 Dispatcher → File-System Agent Integration Tests
+# =============================================================================
+
+
+def test_dispatcher_routes_create_file_to_filesystem_agent():
+    """
+    Dispatcher should route a create_file ActionRequest to the
+    FileSystemAutomationAgent and execute it through the fake backend.
+    """
+
+    registry = ActionRegistry()
+    agent_registry = AgentRegistry()
+
+    backend = FakeFileSystemBackend()
+
+    filesystem_agent = FileSystemAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(
+        agent_registry,
+    )
+
+    mapper.register(
+        ToolType.FILESYSTEM,
+        filesystem_agent,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=300,
+        action="create_file",
+        tool="filesystem_agent",
+        parameters={
+            "path": r"C:\jarvis_m5_l\test.txt",
+        },
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 300
+    assert result.status == ExecutionStatus.COMPLETED
+    assert result.success is True
+    assert result.failure_type == FailureType.NONE
+
+    exists_result = backend.path_exists(
+        r"C:\jarvis_m5_l\test.txt",
+    )
+
+    assert exists_result["exists"] is True
+
+# =============================================================================
+# M5-L.8 Additional Dispatcher → File-System Agent Integration Tests
+# =============================================================================
+
+
+def test_dispatcher_routes_create_directory_to_filesystem_agent():
+    """
+    Dispatcher should route create_directory to the
+    FileSystemAutomationAgent.
+    """
+
+    registry = ActionRegistry()
+    agent_registry = AgentRegistry()
+
+    backend = FakeFileSystemBackend()
+
+    filesystem_agent = FileSystemAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(agent_registry)
+
+    mapper.register(
+        ToolType.FILESYSTEM,
+        filesystem_agent,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=301,
+        action="create_directory",
+        tool="filesystem_agent",
+        parameters={
+            "path": r"C:\jarvis_m5_l",
+        },
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 301
+    assert result.status == ExecutionStatus.COMPLETED
+    assert result.success is True
+    assert result.failure_type == FailureType.NONE
+
+    exists_result = backend.path_exists(
+        r"C:\jarvis_m5_l",
+    )
+
+    assert exists_result["exists"] is True
+
+
+def test_dispatcher_routes_copy_file_to_filesystem_agent():
+    """
+    Dispatcher should route copy_file to the
+    FileSystemAutomationAgent.
+    """
+
+    registry = ActionRegistry()
+    agent_registry = AgentRegistry()
+
+    backend = FakeFileSystemBackend()
+
+    backend.create_file(
+        r"C:\jarvis_m5_l\source.txt",
+    )
+
+    filesystem_agent = FileSystemAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(agent_registry)
+
+    mapper.register(
+        ToolType.FILESYSTEM,
+        filesystem_agent,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=302,
+        action="copy_file",
+        tool="filesystem_agent",
+        parameters={
+            "source": r"C:\jarvis_m5_l\source.txt",
+            "destination": r"C:\jarvis_m5_l\copy.txt",
+        },
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 302
+    assert result.status == ExecutionStatus.COMPLETED
+    assert result.success is True
+    assert result.failure_type == FailureType.NONE
+
+    assert backend.path_exists(
+        r"C:\jarvis_m5_l\copy.txt",
+    )["exists"] is True
+
+
+def test_dispatcher_routes_move_file_to_filesystem_agent():
+    """
+    Dispatcher should route move_file to the
+    FileSystemAutomationAgent.
+    """
+
+    registry = ActionRegistry()
+    agent_registry = AgentRegistry()
+
+    backend = FakeFileSystemBackend()
+
+    backend.create_file(
+        r"C:\jarvis_m5_l\source.txt",
+    )
+
+    filesystem_agent = FileSystemAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(agent_registry)
+
+    mapper.register(
+        ToolType.FILESYSTEM,
+        filesystem_agent,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=303,
+        action="move_file",
+        tool="filesystem_agent",
+        parameters={
+            "source": r"C:\jarvis_m5_l\source.txt",
+            "destination": r"C:\jarvis_m5_l\moved.txt",
+        },
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 303
+    assert result.status == ExecutionStatus.COMPLETED
+    assert result.success is True
+    assert result.failure_type == FailureType.NONE
+
+    assert backend.path_exists(
+        r"C:\jarvis_m5_l\source.txt",
+    )["exists"] is False
+
+    assert backend.path_exists(
+        r"C:\jarvis_m5_l\moved.txt",
+    )["exists"] is True
+
+
+def test_dispatcher_routes_rename_file_to_filesystem_agent():
+    """
+    Dispatcher should route rename_file to the
+    FileSystemAutomationAgent.
+    """
+
+    registry = ActionRegistry()
+    agent_registry = AgentRegistry()
+
+    backend = FakeFileSystemBackend()
+
+    backend.create_file(
+        r"C:\jarvis_m5_l\old.txt",
+    )
+
+    filesystem_agent = FileSystemAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(agent_registry)
+
+    mapper.register(
+        ToolType.FILESYSTEM,
+        filesystem_agent,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=304,
+        action="rename_file",
+        tool="filesystem_agent",
+        parameters={
+            "path": r"C:\jarvis_m5_l\old.txt",
+            "new_name": "new.txt",
+        },
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 304
+    assert result.status == ExecutionStatus.COMPLETED
+    assert result.success is True
+    assert result.failure_type == FailureType.NONE
+
+    assert backend.path_exists(
+        r"C:\jarvis_m5_l\old.txt",
+    )["exists"] is False
+
+    assert backend.path_exists(
+        r"C:\jarvis_m5_l\new.txt",
+    )["exists"] is True
+
+
+def test_dispatcher_routes_list_directory_to_filesystem_agent():
+    """
+    Dispatcher should route list_directory to the
+    FileSystemAutomationAgent.
+    """
+
+    registry = ActionRegistry()
+    agent_registry = AgentRegistry()
+
+    backend = FakeFileSystemBackend()
+
+    backend.create_directory(
+        r"C:\jarvis_m5_l",
+    )
+
+    backend.create_file(
+        r"C:\jarvis_m5_l\file.txt",
+    )
+
+    filesystem_agent = FileSystemAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(agent_registry)
+
+    mapper.register(
+        ToolType.FILESYSTEM,
+        filesystem_agent,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=305,
+        action="list_directory",
+        tool="filesystem_agent",
+        parameters={
+            "path": r"C:\jarvis_m5_l",
+        },
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 305
+    assert result.status == ExecutionStatus.COMPLETED
+    assert result.success is True
+    assert result.failure_type == FailureType.NONE
+
+    # The dispatcher returns the integrated execution outcome.
+    # The fake backend state verifies the directory itself exists.
+    directory_result = backend.path_exists(
+        r"C:\jarvis_m5_l",
+    )
+
+    assert directory_result["exists"] is True
+
+
+def test_dispatcher_routes_path_exists_to_filesystem_agent():
+    """
+    Dispatcher should route path_exists to the
+    FileSystemAutomationAgent.
+    """
+
+    registry = ActionRegistry()
+    agent_registry = AgentRegistry()
+
+    backend = FakeFileSystemBackend()
+
+    backend.create_file(
+        r"C:\jarvis_m5_l\exists.txt",
+    )
+
+    filesystem_agent = FileSystemAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(agent_registry)
+
+    mapper.register(
+        ToolType.FILESYSTEM,
+        filesystem_agent,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=306,
+        action="path_exists",
+        tool="filesystem_agent",
+        parameters={
+            "path": r"C:\jarvis_m5_l\exists.txt",
+        },
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 306
+    assert result.status == ExecutionStatus.COMPLETED
+    assert result.success is True
+    assert result.failure_type == FailureType.NONE
+
+
+def test_dispatcher_propagates_filesystem_validation_failure():
+    """
+    Dispatcher should propagate filesystem validation failures
+    produced by the FileSystemAutomationAgent.
+    """
+
+    registry = ActionRegistry()
+    agent_registry = AgentRegistry()
+
+    backend = FakeFileSystemBackend()
+
+    filesystem_agent = FileSystemAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(agent_registry)
+
+    mapper.register(
+        ToolType.FILESYSTEM,
+        filesystem_agent,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=307,
+        action="create_file",
+        tool="filesystem_agent",
+        parameters={
+            "path": "",
+        },
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 307
+    assert result.status == ExecutionStatus.FAILED
+    assert result.success is False
+    assert result.failure_type == FailureType.VALIDATION
+    assert result.error_message is not None
+
+# =============================================================================
+# M5-L.9 Registry + Dispatcher Integration Tests
+# =============================================================================
+
+
+def test_dispatcher_fails_when_filesystem_tool_mapping_is_missing():
+    """
+    Dispatcher should fail when a filesystem agent exists in the
+    AgentRegistry but no ToolType.FILESYSTEM mapping exists.
+    """
+
+    registry = ActionRegistry()
+    agent_registry = AgentRegistry()
+
+    backend = FakeFileSystemBackend()
+
+    filesystem_agent = FileSystemAutomationAgent(
+        backend=backend,
+    )
+
+    # Register the agent directly in AgentRegistry.
+    agent_registry.register(filesystem_agent)
+
+    # Mapper exists, but no FILESYSTEM mapping is registered.
+    mapper = ToolAgentMapper(
+        agent_registry,
+    )
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=400,
+        action="create_file",
+        tool="filesystem_agent",
+        parameters={
+            "path": r"C:\jarvis_m5_l\missing_mapping.txt",
+        },
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 400
+    assert result.status == ExecutionStatus.FAILED
+    assert result.success is False
+    assert result.error_message is not None
+
+    # The agent itself must still exist in the registry.
+    assert agent_registry.contains("filesystem_agent") is True
+    assert agent_registry.get("filesystem_agent") is filesystem_agent
+
+    # The filesystem mapping must still be absent.
+    assert mapper.contains(ToolType.FILESYSTEM) is False
+
+def test_dispatcher_respects_filesystem_mapping_removal():
+    """
+    Removing the filesystem ToolType mapping should prevent dispatcher
+    resolution while keeping the filesystem agent registered.
+    """
+
+    registry = ActionRegistry()
+    agent_registry = AgentRegistry()
+
+    backend = FakeFileSystemBackend()
+
+    filesystem_agent = FileSystemAutomationAgent(
+        backend=backend,
+    )
+
+    mapper = ToolAgentMapper(
+        agent_registry,
+    )
+
+    mapper.register(
+        ToolType.FILESYSTEM,
+        filesystem_agent,
+    )
+
+    # Verify initial integration state.
+    assert mapper.contains(ToolType.FILESYSTEM) is True
+    assert agent_registry.contains("filesystem_agent") is True
+
+    # Remove only the ToolType mapping.
+    mapper.unregister(ToolType.FILESYSTEM)
+
+    assert mapper.contains(ToolType.FILESYSTEM) is False
+
+    # Agent must remain registered.
+    assert agent_registry.contains("filesystem_agent") is True
+    assert agent_registry.get("filesystem_agent") is filesystem_agent
+
+    dispatcher = AutomationActionDispatcher(
+        registry,
+        tool_agent_mapper=mapper,
+    )
+
+    task = create_task(
+        task_id=401,
+        action="create_file",
+        tool="filesystem_agent",
+        parameters={
+            "path": r"C:\jarvis_m5_l\removed_mapping.txt",
+        },
+    )
+
+    result = dispatcher.dispatch(
+        task,
+        attempt=1,
+    )
+
+    assert result.task_id == 401
+    assert result.status == ExecutionStatus.FAILED
+    assert result.success is False
+    assert result.error_message is not None
+
+    # The agent remains available in AgentRegistry even though
+    # the ToolType mapping was removed.
+    assert agent_registry.contains("filesystem_agent") is True
+    assert agent_registry.get("filesystem_agent") is filesystem_agent

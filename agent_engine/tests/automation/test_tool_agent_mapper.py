@@ -16,7 +16,12 @@ from agent_engine.contracts.enums import ToolType
 from agent_engine.automation.agents.mouse.mouse_agent import (
     MouseAutomationAgent,
 )
-
+from agent_engine.automation.agents.filesystem.filesystem_agent import (
+    FileSystemAutomationAgent,
+)
+from agent_engine.automation.agents.filesystem.fake_filesystem_backend import (
+    FakeFileSystemBackend,
+)
 
 class TestMapperAgent(AutomationAgent):
     """
@@ -397,4 +402,95 @@ def test_mouse_mapper_and_registry_share_same_agent() -> None:
 
     assert registered is mouse_agent
     assert resolved is mouse_agent
+    assert resolved is registered
+
+# =============================================================================
+# File-System Agent Integration
+# =============================================================================
+
+
+def test_filesystem_agent_can_be_mapped() -> None:
+    """
+    FileSystemAutomationAgent must be registerable through
+    ToolAgentMapper.
+    """
+
+    registry = AgentRegistry()
+    mapper = ToolAgentMapper(registry)
+
+    filesystem_agent = FileSystemAutomationAgent(
+        backend=FakeFileSystemBackend(),
+    )
+
+    mapper.register(
+        ToolType.FILESYSTEM,
+        filesystem_agent,
+    )
+
+    assert mapper.contains(
+        ToolType.FILESYSTEM,
+    )
+
+    assert registry.contains(
+        "filesystem_agent",
+    )
+
+
+def test_filesystem_tool_resolves_to_filesystem_agent() -> None:
+    """
+    ToolType.FILESYSTEM must resolve to the registered
+    FileSystemAutomationAgent.
+    """
+
+    registry = AgentRegistry()
+    mapper = ToolAgentMapper(registry)
+
+    filesystem_agent = FileSystemAutomationAgent(
+        backend=FakeFileSystemBackend(),
+    )
+
+    mapper.register(
+        ToolType.FILESYSTEM,
+        filesystem_agent,
+    )
+
+    resolved = mapper.resolve(
+        ToolType.FILESYSTEM,
+    )
+
+    assert resolved is filesystem_agent
+
+    assert resolved.tool_type == ToolType.FILESYSTEM
+
+    assert resolved.agent_id == "filesystem_agent"
+
+
+def test_filesystem_mapper_and_registry_share_same_agent() -> None:
+    """
+    ToolAgentMapper and AgentRegistry must reference the same
+    FileSystemAutomationAgent instance.
+    """
+
+    registry = AgentRegistry()
+    mapper = ToolAgentMapper(registry)
+
+    filesystem_agent = FileSystemAutomationAgent(
+        backend=FakeFileSystemBackend(),
+    )
+
+    mapper.register(
+        ToolType.FILESYSTEM,
+        filesystem_agent,
+    )
+
+    registered = registry.get(
+        "filesystem_agent",
+    )
+
+    resolved = mapper.resolve(
+        ToolType.FILESYSTEM,
+    )
+
+    assert registered is filesystem_agent
+    assert resolved is filesystem_agent
     assert resolved is registered
